@@ -1,0 +1,55 @@
+-- GS Laser Awareness v1.0
+-- Credit: Weee
+
+function OnLoad()
+	print("GS Laser Awareness v1 loaded successfully")
+	config = scriptConfig("GSLaserAwareness","GS Laser awareness")
+	config:addParam("LaserAwareness","Laser Awareness",SCRIPT_PARAM_ONOFF,true)
+	config:addParam("HighLightWhenInRange","High light when in range",SCRIPT_PARAM_ONOFF,false)
+	config:addParam("AwarenessRange","Awareness Range",SCRIPT_PARAM_SLICE,5000,2000,10000,0)
+	config:addParam("ColorLine","Color Line",SCRIPT_PARAM_COLOR, {255,55,255,0})
+	config:addParam("HighLightRange","High light range",SCRIPT_PARAM_SLICE,2000,0,4000,0)
+	config:addParam("ColorHighLight","Color Highlight",SCRIPT_PARAM_COLOR,{255,255,0,0})
+end
+
+
+function OnDraw()
+	local color = config.ColorLine
+	local displayCount = 0
+	if player.dead or not config.LaserAwareness then return end
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if player:GetDistance(hero) < config.AwarenessRange and hero.visible and not hero.dead and player:GetDistance(hero)>300 and hero.valid then
+			  local playerPos = Point(myHero.x, myHero.z)
+        local heroPos = Point(hero.x, hero.z)
+        local directionVector = (heroPos - playerPos):normalized()
+        local infoPos = playerPos + directionVector * (500 + 200 * displayCount)
+        infoPos = WorldToScreen(D3DXVECTOR3(infoPos.x, player.y, infoPos.y))
+        local startPos = playerPos + directionVector * 200
+				if player:GetDistance(hero) < config.HighLightRange and config.HighLightWhenInRange then
+					color = config.ColorHighLight
+				else
+					color = config.ColorLine
+				end
+        DrawLine3Dcustom(startPos.x, player.y, startPos.y, hero.x, hero.y, hero.z, 7, ARGB(100 * GetDrawClock(math.random(0,2)),255,255,255))
+        DrawLine3Dcustom(startPos.x, player.y, startPos.y, hero.x, hero.y, hero.z, 5, ARGB(100,color[2],color[3],color[4]))
+        DrawLine3Dcustom(startPos.x, player.y, startPos.y, hero.x, hero.y, hero.z, 1, ARGB(175,color[2],color[3],color[4]))
+				
+        local infoText = hero.charName .. " [Lv." .. hero.level .. "]"
+				local infoRangeText = "Range" .. "["..math.round(player:GetDistance(hero),0).."]"
+        DrawLine(infoPos.x, infoPos.y, infoPos.x + 30, infoPos.y - 30, 1, ARGB(175,255,255,255))
+        DrawLine(infoPos.x + 30, infoPos.y - 30, infoPos.x + 30 + 10 * infoText:len(), infoPos.y - 30, 1, ARGB(175,255,255,255))
+        DrawTextA(infoText, 20, infoPos.x + 30 + 1, infoPos.y - 30, ARGB(175,255,255,255), "left", "bottom")
+				DrawTextA(infoRangeText, 20, infoPos.x + 30 + 1, infoPos.y - 10, ARGB(175,255,255,255), "left", "bottom")
+				displayCount = displayCount +1
+		end
+	end
+end
+
+function DrawLine3Dcustom(x1, y1, z1, x2, y2, z2, width, color)
+    local p = WorldToScreen(D3DXVECTOR3(x1, y1, z1))
+    local px, py = p.x, p.y
+    local c = WorldToScreen(D3DXVECTOR3(x2, y2, z2))
+    local cx, cy = c.x, c.y
+        DrawLine(cx, cy, px, py, width or 1, color or 4294967295)
+end
+
